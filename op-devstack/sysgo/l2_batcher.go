@@ -54,7 +54,7 @@ func WithBatcherOption(opt BatcherOption) stack.Option[*Orchestrator] {
 
 func WithBatcher(batcherID stack.L2BatcherID, l1ELID stack.L1ELNodeID, l2CLID stack.L2CLNodeID, l2ELID stack.L2ELNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), batcherID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), batcherID))
 
 		require := p.Require()
 		require.False(orch.batchers.Has(batcherID), "batcher must not already exist")

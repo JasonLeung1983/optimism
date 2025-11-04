@@ -16,7 +16,7 @@ const defaultDevnetUrl = "kt://interop-devnet"
 type OrchestratorOption func(*Orchestrator)
 
 type Orchestrator struct {
-	p devtest.P
+	p devtest.Scope
 
 	env *env.DevnetEnv
 
@@ -54,7 +54,7 @@ func getCompatType(url string) compat.Type {
 	return compat.Persistent
 }
 
-func NewOrchestrator(p devtest.P, sysHook stack.SystemHook) *Orchestrator {
+func NewOrchestrator(p devtest.Scope, sysHook stack.SystemHook) *Orchestrator {
 	url := os.Getenv(env.EnvURLVar)
 	if url == "" {
 		p.Logger().Warn("No devnet URL specified, using default", "default", defaultDevnetUrl)
@@ -77,7 +77,7 @@ func NewOrchestrator(p devtest.P, sysHook stack.SystemHook) *Orchestrator {
 	return orch
 }
 
-func (o *Orchestrator) P() devtest.P {
+func (o *Orchestrator) P() devtest.Scope {
 	return o.p
 }
 

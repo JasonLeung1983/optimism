@@ -46,7 +46,7 @@ func (n *SyncTesterService) hydrate(system stack.ExtensibleSystem) {
 
 func WithSyncTester(syncTesterID stack.SyncTesterID, l2ELs []stack.L2ELNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), syncTesterID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), syncTesterID))
 
 		require := p.Require()
 
@@ -92,7 +92,7 @@ func WithSyncTester(syncTesterID stack.SyncTesterID, l2ELs []stack.L2ELNodeID) s
 
 func WithSyncTesterWithExternalEndpoint(syncTesterID stack.SyncTesterID, endpointRPC string, chainID eth.ChainID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), syncTesterID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), syncTesterID))
 
 		require := p.Require()
 

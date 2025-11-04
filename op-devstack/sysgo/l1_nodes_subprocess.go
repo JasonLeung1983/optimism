@@ -40,7 +40,7 @@ type ExternalL1Geth struct {
 	// Each entry is of the form "key=value".
 	env []string
 
-	p devtest.P
+	p devtest.Scope
 
 	sub *SubProcess
 }
@@ -152,7 +152,7 @@ const GethExecPathEnvVar = "SYSGO_GETH_EXEC_PATH"
 
 func WithL1NodesSubprocess(id stack.L1ELNodeID, clID stack.L1CLNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), id))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), id))
 		require := p.Require()
 
 		execPath, ok := os.LookupEnv(GethExecPathEnvVar)

@@ -76,7 +76,7 @@ func (s *TestSequencer) hydrate(sys stack.ExtensibleSystem) {
 
 func WithTestSequencer(testSequencerID stack.TestSequencerID, l1CLID stack.L1CLNodeID, l2CLID stack.L2CLNodeID, l1ELID stack.L1ELNodeID, l2ELID stack.L2ELNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), testSequencerID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), testSequencerID))
 		require := p.Require()
 
 		logger := p.Logger()
@@ -209,6 +209,8 @@ func WithTestSequencer(testSequencerID stack.TestSequencerID, l1CLID stack.L1CLN
 				},
 			},
 		}
+
+		logger.Info("Configuring test sequencer", "l1EL", l1EL.UserRPC(), "l2EL", l2EL.UserRPC(), "l2CL", l2CL.UserRPC())
 
 		jobs := work.NewJobRegistry()
 		ensemble, err := v.Start(context.Background(), &work.StartOpts{

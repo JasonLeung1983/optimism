@@ -45,7 +45,7 @@ func NewPrometheusMetricsTarget(host string, port string, isRunningInDocker bool
 }
 
 type L2MetricsDashboard struct {
-	p devtest.P
+	p devtest.Scope
 
 	grafanaExecPath   string
 	grafanaArgs       []string
@@ -215,7 +215,7 @@ type prometheusStaticConfig struct {
 }
 
 // Returns the path to the dynamically-generated prometheus.yml file for metrics scraping.
-func getPrometheusConfigFilePath(p devtest.P, metricsEndpoints *locks.RWMap[string, []PrometheusMetricsTarget]) string {
+func getPrometheusConfigFilePath(p devtest.Scope, metricsEndpoints *locks.RWMap[string, []PrometheusMetricsTarget]) string {
 
 	var scrapeConfigs []prometheusScrapeConfigEntry
 
@@ -264,7 +264,7 @@ func getPrometheusConfigFilePath(p devtest.P, metricsEndpoints *locks.RWMap[stri
 // Note: from the returned directory, the generated prometheus.yml will be at:
 //
 //	returned_dir_path/provisioning/datasources/prometheus.yml
-func getGrafanaProvisioningDirPath(p devtest.P) string {
+func getGrafanaProvisioningDirPath(p devtest.Scope) string {
 	// If the caller provides a Grafana provisioning directory, use that, otherwise use a temp dir
 	baseDir := os.Getenv(grafanaProvisioningDirEnvVar)
 	if baseDir == "" {
@@ -308,7 +308,7 @@ datasources:
 // getGrafanaDataDir returns the path to the grafana provisioning dir for metrics.
 // If the data dir env var is set, this function will use that path. If not, a temp dir
 // will be created and removed when this process terminates.
-func getGrafanaDataDir(p devtest.P) string {
+func getGrafanaDataDir(p devtest.Scope) string {
 	// If the caller provides a Grafana data directory, use that, otherwise use a temp dir
 	baseDir := os.Getenv(grafanaDataDirEnvVar)
 	if baseDir == "" {

@@ -56,7 +56,7 @@ func (n *FaucetService) hydrate(system stack.ExtensibleSystem) {
 func WithFaucets(l1ELs []stack.L1ELNodeID, l2ELs []stack.L2ELNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
 		faucetID := stack.NewFaucetID("dev-faucet", l2ELs[0].ChainID())
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), faucetID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), faucetID))
 
 		require := p.Require()
 

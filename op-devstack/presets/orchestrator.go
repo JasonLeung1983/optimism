@@ -115,7 +115,7 @@ func DoMain(m TestingM, opts ...stack.CommonOption) {
 	os.Exit(code)
 }
 
-func initOrchestrator(ctx context.Context, p devtest.P, opt stack.CommonOption) {
+func initOrchestrator(ctx context.Context, p devtest.Scope, opt stack.CommonOption) {
 	ctx, span := p.Tracer().Start(ctx, "initializing orchestrator")
 	defer span.End()
 
@@ -160,6 +160,28 @@ Add a TestMain to your test package init the orchestrator:
 `)
 	}
 	return out
+}
+
+// RunWithSysgoOrchestrator spins up a fresh orchestrator with the provided options for the duration of fn.
+// This is useful for table-driven tests that need isolated systems per subtest.
+func RunWithSysgoOrchestrator(t devtest.T, fn func(stack.Orchestrator), opts ...stack.CommonOption) {
+	scope := t.WithScope(t.Ctx())
+	opt := stack.Combine(opts...)
+	orch := sysgo.NewOrchestrator(scope, stack.SystemHook(opt))
+	var orchIface stack.Orchestrator = orch
+	stack.ApplyOptionLifecycle(opt, orchIface)
+
+	// Make this orchestrator available to preset constructors that read the global.
+	lockedOrchestrator.Lock()
+	lockedOrchestrator.Value = orch
+	lockedOrchestrator.Unlock()
+	defer func() {
+		lockedOrchestrator.Lock()
+		lockedOrchestrator.Value = nil
+		lockedOrchestrator.Unlock()
+	}()
+
+	fn(orch)
 }
 
 // WithCompatibleTypes is a common option that can be used to ensure that the orchestrator is compatible with the preset.

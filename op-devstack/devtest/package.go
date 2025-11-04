@@ -17,22 +17,10 @@ import (
 
 // P is used by the preset package and system backends as testing interface, to host package-wide resources.
 type P interface {
-	CommonT
+	Scope
 
 	// WithCtx makes a copy of P with a specific context.
-	// The ctx must match the test-scope of the existing context.
-	// This function is used to create a P with annotated context, e.g. a specific resource.
 	WithCtx(ctx context.Context) P
-
-	// TempDir creates a temporary directory, and returns the file-path.
-	// This directory is cleaned up at the end of the package,
-	// and can be shared safely between tests that run in that package scope.
-	TempDir() string
-
-	// Cleanup runs the given function at the end of the package-scope.
-	// This function will clean-up once the package-level testing is fully complete.
-	// These resources can thus be shared safely between tests.
-	Cleanup(fn func())
 
 	// This distinguishes the interface from other testing interfaces,
 	// such as the one used at test-level for test-scope resources.
@@ -69,6 +57,7 @@ type implP struct {
 }
 
 var _ P = (*implP)(nil)
+var _ Scope = (*implP)(nil)
 
 func (t *implP) Error(args ...any) {
 	t.logger.Error(fmt.Sprintln(args...))
@@ -141,6 +130,10 @@ func (t *implP) Tracer() trace.Tracer {
 
 func (t *implP) Ctx() context.Context {
 	return t.ctx
+}
+
+func (t *implP) WithScope(ctx context.Context) Scope {
+	return t.WithCtx(ctx)
 }
 
 type wrapP struct {

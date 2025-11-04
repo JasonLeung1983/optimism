@@ -15,7 +15,7 @@ import (
 // WithL2NetworkFromSuperchainRegistry creates an L2 network using the rollup config from the superchain registry
 func WithL2NetworkFromSuperchainRegistry(l2NetworkID stack.L2NetworkID, networkName string) stack.Option[*Orchestrator] {
 	return stack.BeforeDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), l2NetworkID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), l2NetworkID))
 		require := p.Require()
 
 		// Load the rollup config from the superchain registry
@@ -54,7 +54,7 @@ func WithEmptyDepSet(l2NetworkID stack.L2NetworkID, networkName string) stack.Op
 	return stack.Combine(
 		WithL2NetworkFromSuperchainRegistry(l2NetworkID, networkName),
 		stack.BeforeDeploy(func(orch *Orchestrator) {
-			p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), l2NetworkID))
+			p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), l2NetworkID))
 			require := p.Require()
 
 			// Check that chain config is available in registry

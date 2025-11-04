@@ -62,7 +62,7 @@ func WithL2ChallengerPostDeploy(orch *Orchestrator, challengerID stack.L2Challen
 ) {
 	ctx := orch.P().Ctx()
 	ctx = stack.ContextWithID(ctx, challengerID)
-	p := orch.P().WithCtx(ctx)
+	p := orch.P().WithScope(ctx)
 
 	require := p.Require()
 	require.False(orch.challengers.Has(challengerID), "challenger must not already exist")

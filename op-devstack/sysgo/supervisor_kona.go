@@ -27,7 +27,7 @@ type KonaSupervisor struct {
 	// Each entry is of the form "key=value".
 	env []string
 
-	p devtest.P
+	p devtest.Scope
 
 	sub *SubProcess
 }
@@ -116,7 +116,7 @@ func (s *KonaSupervisor) Stop() {
 
 func WithKonaSupervisor(supervisorID stack.SupervisorID, clusterID stack.ClusterID, l1ELID stack.L1ELNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), supervisorID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), supervisorID))
 		require := p.Require()
 
 		l1EL, ok := orch.l1ELs.Get(l1ELID)

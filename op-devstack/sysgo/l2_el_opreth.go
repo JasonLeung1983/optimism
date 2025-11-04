@@ -25,7 +25,6 @@ type OpReth struct {
 	mu sync.Mutex
 
 	id        stack.L2ELNodeID
-	l2Net     *L2Network
 	jwtPath   string
 	jwtSecret [32]byte
 	authRPC   string
@@ -39,7 +38,7 @@ type OpReth struct {
 	// Each entry is of the form "key=value".
 	env []string
 
-	p devtest.P
+	p devtest.Scope
 
 	sub *SubProcess
 
@@ -186,7 +185,7 @@ func (n *OpReth) JWTPath() string {
 
 func WithOpReth(id stack.L2ELNodeID, opts ...L2ELOption) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), id))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), id))
 		require := p.Require()
 
 		l2Net, ok := orch.l2Nets.Get(id.ChainID())
@@ -280,7 +279,6 @@ func WithOpReth(id stack.L2ELNodeID, opts ...L2ELOption) stack.Option[*Orchestra
 
 		l2EL := &OpReth{
 			id:                 id,
-			l2Net:              l2Net,
 			jwtPath:            jwtPath,
 			jwtSecret:          jwtSecret,
 			authRPC:            "",

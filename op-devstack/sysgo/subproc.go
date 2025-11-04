@@ -12,7 +12,7 @@ import (
 
 // SubProcess is a process that can be started and stopped.
 type SubProcess struct {
-	p   devtest.P
+	p   devtest.Scope
 	cmd *exec.Cmd
 
 	stdOutLogs logpipe.LogProcessor
@@ -21,7 +21,39 @@ type SubProcess struct {
 	mu sync.Mutex
 }
 
-func NewSubProcess(p devtest.P, stdOutLogs, stdErrLogs logpipe.LogProcessor) *SubProcess {
+// lineBuffer is an io.Writer that buffers data across writes and emits complete lines
+// to the provided LogProcessor, preserving log entries that may span multiple writes.
+type lineBuffer struct {
+	mu   sync.Mutex
+	buf  []byte
+	proc logpipe.LogProcessor
+}
+
+func (lb *lineBuffer) Write(p []byte) (int, error) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+
+	// Append new data
+	lb.buf = append(lb.buf, p...)
+
+	start := 0
+	for i := 0; i < len(lb.buf); i++ {
+		if lb.buf[i] == '\n' {
+			line := lb.buf[start:i]
+			if len(line) > 0 {
+				lb.proc(line)
+			}
+			start = i + 1
+		}
+	}
+	// Keep any partial trailing line
+	if start > 0 {
+		lb.buf = append([]byte(nil), lb.buf[start:]...)
+	}
+	return len(p), nil
+}
+
+func NewSubProcess(p devtest.Scope, stdOutLogs, stdErrLogs logpipe.LogProcessor) *SubProcess {
 	return &SubProcess{
 		p:          p,
 		stdOutLogs: stdOutLogs,
@@ -35,10 +67,12 @@ func (sp *SubProcess) Start(cmdPath string, args []string, env []string) error {
 	if sp.cmd != nil {
 		return fmt.Errorf("process is still running (PID: %d)", sp.cmd.Process.Pid)
 	}
+	sp.p.Logger().Info("Starting subprocess", "cmd", cmdPath, "args", args)
+
 	cmd := exec.Command(cmdPath, args...)
 	cmd.Env = append(os.Environ(), env...)
-	cmd.Stdout = sp.stdOutLogs
-	cmd.Stderr = sp.stdErrLogs
+	cmd.Stdout = &lineBuffer{proc: sp.stdOutLogs}
+	cmd.Stderr = &lineBuffer{proc: sp.stdErrLogs}
 	if err := cmd.Start(); err != nil {
 		return err
 	}

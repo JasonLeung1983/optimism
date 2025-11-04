@@ -31,17 +31,7 @@ var (
 )
 
 type T interface {
-	CommonT
-
-	// TempDir creates a temporary directory, and returns the file-path.
-	// This directory is cleaned up at the end of the test, and must not be shared between tests.
-	TempDir() string
-
-	// Cleanup runs the given function at the end of the test-scope,
-	// or at the end of the sub-test (if this is a nested test).
-	// This function will clean-up before the package-level testing scope may be complete.
-	// Do not use the test-scope cleanup with shared resources.
-	Cleanup(fn func())
+	Scope
 
 	// Run runs the given function in as a sub-test.
 	Run(name string, fn func(T))
@@ -198,6 +188,10 @@ func (t *testingT) WithCtx(ctx context.Context) T {
 	out.req = testreq.New(out)
 	out.gate = testreq.New(&gateAdapter{out})
 	return out
+}
+
+func (t *testingT) WithScope(ctx context.Context) Scope {
+	return t.WithCtx(ctx)
 }
 
 func (t *testingT) Require() *testreq.Assertions {

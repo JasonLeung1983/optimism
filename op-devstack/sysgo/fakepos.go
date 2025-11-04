@@ -6,7 +6,7 @@ import (
 )
 
 type FakePoS struct {
-	p       devtest.P
+	p       devtest.Scope
 	fakepos *geth.FakePoS
 }
 

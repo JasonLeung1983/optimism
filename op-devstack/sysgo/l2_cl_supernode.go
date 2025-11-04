@@ -37,7 +37,7 @@ type SuperNode struct {
 	userRPC          string
 	interopEndpoint  string
 	interopJwtSecret eth.Bytes32
-	p                devtest.P
+	p                devtest.Scope
 	logger           log.Logger
 	el               *stack.L2ELNodeID // Optional: nil when using SyncTester
 	l1UserRPC        string
@@ -151,7 +151,7 @@ func WithSuperNode(l2CLID stack.L2CLNodeID, l1CLID stack.L1CLNodeID, l1ELID stac
 // SuperNodeProxy is a thin wrapper that points to a shared supernode instance.
 type SuperNodeProxy struct {
 	id               stack.L2CLNodeID
-	p                devtest.P
+	p                devtest.Scope
 	logger           log.Logger
 	userRPC          string
 	interopEndpoint  string

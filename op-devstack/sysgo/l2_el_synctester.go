@@ -29,7 +29,7 @@ type SyncTesterEL struct {
 	userProxy *tcpproxy.Proxy
 
 	config *SyncTesterELConfig
-	p      devtest.P
+	p      devtest.Scope
 
 	// Reference to the orchestrator to find the EL node to connect to
 	orch *Orchestrator
@@ -56,7 +56,7 @@ func DefaultSyncTesterELConfig() *SyncTesterELConfig {
 }
 
 type SyncTesterELOption interface {
-	Apply(p devtest.P, id stack.L2ELNodeID, cfg *SyncTesterELConfig)
+	Apply(p devtest.Scope, id stack.L2ELNodeID, cfg *SyncTesterELConfig)
 }
 
 // WithGlobalSyncTesterELOption applies the SyncTesterELOption to all SyncTesterEL instances in this orchestrator
@@ -66,11 +66,11 @@ func WithGlobalSyncTesterELOption(opt SyncTesterELOption) stack.Option[*Orchestr
 	})
 }
 
-type SyncTesterELOptionFn func(p devtest.P, id stack.L2ELNodeID, cfg *SyncTesterELConfig)
+type SyncTesterELOptionFn func(p devtest.Scope, id stack.L2ELNodeID, cfg *SyncTesterELConfig)
 
 var _ SyncTesterELOption = SyncTesterELOptionFn(nil)
 
-func (fn SyncTesterELOptionFn) Apply(p devtest.P, id stack.L2ELNodeID, cfg *SyncTesterELConfig) {
+func (fn SyncTesterELOptionFn) Apply(p devtest.Scope, id stack.L2ELNodeID, cfg *SyncTesterELConfig) {
 	fn(p, id, cfg)
 }
 
@@ -79,7 +79,7 @@ type SyncTesterELOptionBundle []SyncTesterELOption
 
 var _ SyncTesterELOptionBundle = SyncTesterELOptionBundle(nil)
 
-func (l SyncTesterELOptionBundle) Apply(p devtest.P, id stack.L2ELNodeID, cfg *SyncTesterELConfig) {
+func (l SyncTesterELOptionBundle) Apply(p devtest.Scope, id stack.L2ELNodeID, cfg *SyncTesterELConfig) {
 	for _, opt := range l {
 		p.Require().NotNil(opt, "cannot Apply nil SyncTesterELOption")
 		opt.Apply(p, id, cfg)
@@ -177,7 +177,7 @@ func (n *SyncTesterEL) JWTPath() string {
 // The sync tester acts as an EL node that can be used by CL nodes for testing sync.
 func WithSyncTesterL2ELNode(id, readonlyEL stack.L2ELNodeID, opts ...SyncTesterELOption) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), id))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), id))
 		require := p.Require()
 
 		l2Net, ok := orch.l2Nets.Get(readonlyEL.ChainID())

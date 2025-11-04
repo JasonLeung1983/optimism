@@ -32,7 +32,7 @@ import (
 const funderMnemonicIndex = 10_000
 const devFeatureBitmapKey = "devFeatureBitmap"
 
-type DeployerOption func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder)
+type DeployerOption func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder)
 
 func WithDeployerOptions(opts ...DeployerOption) stack.Option[*Orchestrator] {
 	return stack.BeforeDeploy(func(o *Orchestrator) {
@@ -44,18 +44,18 @@ func WithDeployerOptions(opts ...DeployerOption) stack.Option[*Orchestrator] {
 }
 
 func WithForkAtL1Genesis(fork forks.Fork) DeployerOption {
-	return func(_ devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+	return func(_ devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 		builder.L1().WithL1ForkAtGenesis(fork)
 	}
 }
 
 func WithForkAtL1Offset(fork forks.Fork, offset uint64) DeployerOption {
-	return func(_ devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+	return func(_ devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 		builder.L1().WithL1ForkAtOffset(fork, &offset)
 	}
 }
 
-func WithDefaultBPOBlobSchedule(_ devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+func WithDefaultBPOBlobSchedule(_ devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 	// Once we get the latest changes from op-geth we can change this to
 	// params.DefaultBlobSchedule.
 	builder.L1().WithL1BlobSchedule(&params.BlobScheduleConfig{
@@ -69,7 +69,7 @@ func WithDefaultBPOBlobSchedule(_ devtest.P, _ devkeys.Keys, builder intentbuild
 	})
 }
 
-func WithJovianAtGenesis(p devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+func WithJovianAtGenesis(p devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 	for _, l2Cfg := range builder.L2s() {
 		l2Cfg.WithForkAtGenesis(opforks.Jovian)
 	}
@@ -86,7 +86,7 @@ func WithDeployerCacheDir(dirPath string) DeployerPipelineOption {
 // WithDAFootprintGasScalar sets the DA footprint gas scalar with which the networks identified by
 // l2IDs will be launched. If there are no l2IDs provided, all L2 networks are set with scalar.
 func WithDAFootprintGasScalar(scalar uint16, l2IDs ...stack.L2NetworkID) DeployerOption {
-	return func(p devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2 := range builder.L2s() {
 			if len(l2IDs) == 0 || slices.ContainsFunc(l2IDs, func(id stack.L2NetworkID) bool {
 				return id.ChainID() == l2.ChainID()
@@ -203,7 +203,7 @@ type InteropMigration struct {
 }
 
 type worldBuilder struct {
-	p devtest.P
+	p devtest.Scope
 
 	logger  log.Logger
 	require *testreq.Assertions
@@ -234,14 +234,14 @@ var (
 )
 
 func WithEmbeddedContractSources() DeployerOption {
-	return func(_ devtest.P, _ devkeys.Keys, builder intentbuilder.Builder) {
+	return func(_ devtest.Scope, _ devkeys.Keys, builder intentbuilder.Builder) {
 		builder.WithL1ContractsLocator(artifacts.EmbeddedLocator)
 		builder.WithL2ContractsLocator(artifacts.EmbeddedLocator)
 	}
 }
 
 func WithLocalContractSources() DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		paths, err := contractPaths()
 		p.Require().NoError(err)
 		wd, err := os.Getwd()
@@ -256,7 +256,7 @@ func WithLocalContractSources() DeployerOption {
 }
 
 func WithCommons(l1ChainID eth.ChainID) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		_, l1Config := builder.WithL1(l1ChainID)
 
 		l1StartTimestamp := uint64(time.Now().Unix()) + 1
@@ -280,14 +280,14 @@ func WithCommons(l1ChainID eth.ChainID) DeployerOption {
 }
 
 func WithGuardianMatchL1PAO() DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		_, superCfg := builder.WithSuperchain()
 		intentbuilder.WithOverrideGuardianToL1PAO(p, keys, superCfg.L1ChainID(), superCfg)
 	}
 }
 
 func WithPrefundedL2(l1ChainID, l2ChainID eth.ChainID) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		_, l2Config := builder.WithL2(l2ChainID)
 		intentbuilder.WithDevkeyVaults(p, keys, l2Config)
 		intentbuilder.WithDevkeyL2Roles(p, keys, l2Config)
@@ -311,7 +311,7 @@ func WithPrefundedL2(l1ChainID, l2ChainID eth.ChainID) DeployerOption {
 
 // WithDevFeatureEnabled adds a feature as enabled in the dev feature bitmap
 func WithDevFeatureEnabled(flag common.Hash) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		currentValue := builder.GlobalOverride(devFeatureBitmapKey)
 		var bitmap common.Hash
 		if currentValue != nil {
@@ -323,7 +323,7 @@ func WithDevFeatureEnabled(flag common.Hash) DeployerOption {
 
 // WithInteropAtGenesis activates interop at genesis for all known L2s
 func WithInteropAtGenesis() DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2Cfg := range builder.L2s() {
 			l2Cfg.WithForkAtGenesis(opforks.Interop)
 		}
@@ -335,7 +335,7 @@ func WithInteropAtGenesis() DeployerOption {
 // until (including) endFork. Each successive fork is scheduled at
 // an increasing offset.
 func WithHardforkSequentialActivation(startFork, endFork opforks.Name, delta *uint64) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2Cfg := range builder.L2s() {
 			l2Cfg.WithForkAtGenesis(startFork)
 			activateWithOffset := false
@@ -363,14 +363,14 @@ func WithHardforkSequentialActivation(startFork, endFork opforks.Name, delta *ui
 
 // WithSequencingWindow overrides the number of L1 blocks in a sequencing window, applied to all L2s.
 func WithSequencingWindow(n uint64) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		builder.WithGlobalOverride("sequencerWindowSize", uint64(n))
 	}
 }
 
 // WithAdditionalDisputeGames adds additional dispute games to all L2s.
 func WithAdditionalDisputeGames(games []state.AdditionalDisputeGame) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2Cfg := range builder.L2s() {
 			l2Cfg.WithAdditionalDisputeGames(games)
 		}
@@ -388,7 +388,7 @@ func WithDeployerMatchL1PAO() DeployerPipelineOption {
 
 // WithFinalizationPeriodSeconds overrides the number of L1 blocks in a sequencing window, applied to all L2s.
 func WithFinalizationPeriodSeconds(n uint64) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2Cfg := range builder.L2s() {
 			l2Cfg.WithFinalizationPeriodSeconds(n)
 		}
@@ -396,13 +396,13 @@ func WithFinalizationPeriodSeconds(n uint64) DeployerOption {
 }
 
 func WithProofMaturityDelaySeconds(n uint64) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		builder.WithGlobalOverride("proofMaturityDelaySeconds", uint64(n))
 	}
 }
 
 func WithDisputeGameFinalityDelaySeconds(seconds uint64) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		builder.WithGlobalOverride("disputeGameFinalityDelaySeconds", seconds)
 	}
 }
@@ -451,7 +451,7 @@ func (wb *worldBuilder) buildL2DeploymentOutputs() {
 }
 
 func WithRevenueShare(enabled bool, chainFeesRecipient common.Address) DeployerOption {
-	return func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+	return func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 		for _, l2Cfg := range builder.L2s() {
 			l2Cfg.WithRevenueShare(enabled, chainFeesRecipient)
 		}

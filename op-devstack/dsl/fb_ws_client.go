@@ -11,37 +11,37 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type FlashblocksWebsocketProxySet []*FlashblocksWebsocketProxy
+type FlashblocksWSClientSet []*FlashblocksWSClient
 
-func NewFlashblocksWebsocketProxySet(inner []stack.FlashblocksWebsocketProxy) FlashblocksWebsocketProxySet {
-	flashblocksWebsocketProxies := make([]*FlashblocksWebsocketProxy, len(inner))
+func NewFlashblocksWSClientSet(inner []stack.FlashblocksWSClient) FlashblocksWSClientSet {
+	flashblocksWSClients := make([]*FlashblocksWSClient, len(inner))
 	for i, c := range inner {
-		flashblocksWebsocketProxies[i] = NewFlashblocksWebsocketProxy(c)
+		flashblocksWSClients[i] = NewFlashblocksWSClient(c)
 	}
-	return flashblocksWebsocketProxies
+	return flashblocksWSClients
 }
 
-type FlashblocksWebsocketProxy struct {
+type FlashblocksWSClient struct {
 	commonImpl
-	inner stack.FlashblocksWebsocketProxy
+	inner stack.FlashblocksWSClient
 }
 
-func NewFlashblocksWebsocketProxy(inner stack.FlashblocksWebsocketProxy) *FlashblocksWebsocketProxy {
-	return &FlashblocksWebsocketProxy{
+func NewFlashblocksWSClient(inner stack.FlashblocksWSClient) *FlashblocksWSClient {
+	return &FlashblocksWSClient{
 		commonImpl: commonFromT(inner.T()),
 		inner:      inner,
 	}
 }
 
-func (c *FlashblocksWebsocketProxy) String() string {
+func (c *FlashblocksWSClient) String() string {
 	return c.inner.ID().String()
 }
 
-func (c *FlashblocksWebsocketProxy) Escape() stack.FlashblocksWebsocketProxy {
+func (c *FlashblocksWSClient) Escape() stack.FlashblocksWSClient {
 	return c.inner
 }
 
-func (c *FlashblocksWebsocketProxy) ListenFor(logger log.Logger, duration time.Duration, output chan<- []byte, done chan<- struct{}) error {
+func (c *FlashblocksWSClient) ListenFor(logger log.Logger, duration time.Duration, output chan<- []byte, done chan<- struct{}) error {
 	wsURL := c.Escape().WsUrl()
 	headers := c.Escape().WsHeaders()
 	return websocketListenFor(logger, wsURL, headers, duration, output, done)

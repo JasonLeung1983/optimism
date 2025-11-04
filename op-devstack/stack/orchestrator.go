@@ -24,6 +24,8 @@ type ControlPlane interface {
 	L2CLNodeState(id L2CLNodeID, action ControlAction)
 	L2ELNodeState(id L2ELNodeID, action ControlAction)
 	FakePoSState(id L1CLNodeID, action ControlAction)
+	RollupBoostNodeState(id RollupBoostNodeID, action ControlAction)
+	OPRBuilderNodeState(id OPRBuilderNodeID, action ControlAction)
 }
 
 // Orchestrator is the base interface for all system orchestrators.
@@ -32,7 +34,7 @@ type Orchestrator interface {
 	// P is the test-handle of the orchestrator.
 	// This may not be a Go-test handle.
 	// Orchestrators may be instantiated by dev-tools or test-package TestMain functions.
-	P() devtest.P
+	P() devtest.Scope
 
 	// Hydrate adds all services that the orchestrator is aware of to the given system.
 	// An orchestrator may be asked to hydrate different systems, one for each test.

@@ -139,7 +139,7 @@ func WithIsthmusSuper() stack.CommonOption {
 // If the backend is sysgo, it will disable the interop configuration
 func WithUnscheduledInterop() stack.CommonOption {
 	return stack.Combine(
-		stack.MakeCommon(sysgo.WithDeployerOptions(func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+		stack.MakeCommon(sysgo.WithDeployerOptions(func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 			for _, l2 := range builder.L2s() {
 				l2.WithForkAtOffset(forks.Interop, nil)
 			}
@@ -173,7 +173,7 @@ func NewSimpleInterop(t devtest.T) *SimpleInterop {
 // This is applied e.g. to the deployment if running against sysgo.
 func WithSuggestedInteropActivationOffset(offset uint64) stack.CommonOption {
 	return stack.MakeCommon(sysgo.WithDeployerOptions(
-		func(p devtest.P, keys devkeys.Keys, builder intentbuilder.Builder) {
+		func(p devtest.Scope, keys devkeys.Keys, builder intentbuilder.Builder) {
 			for _, l2Cfg := range builder.L2s() {
 				l2Cfg.WithForkAtOffset(forks.Interop, &offset)
 			}

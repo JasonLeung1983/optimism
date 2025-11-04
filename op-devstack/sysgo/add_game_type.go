@@ -116,7 +116,7 @@ func addGameType(o *Orchestrator, absolutePrestate common.Hash, gameType types.G
 	transferOwnershipForDelegateCallProxy(t, l1ChainID.ToBig(), l1PAOKey, client, delegateCallProxy, dgf, l1PAO)
 }
 
-func LocalArtifacts(t devtest.P) *artifacts.Locator {
+func LocalArtifacts(t devtest.Scope) *artifacts.Locator {
 	require := t.Require()
 	_, testFilename, _, ok := runtime.Caller(0)
 	require.Truef(ok, "failed to get test filename")

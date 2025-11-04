@@ -39,13 +39,13 @@ type L2CLConfig struct {
 }
 
 func L2CLSequencer() L2CLOption {
-	return L2CLOptionFn(func(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig) {
+	return L2CLOptionFn(func(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig) {
 		cfg.IsSequencer = true
 	})
 }
 
 func L2CLIndexing() L2CLOption {
-	return L2CLOptionFn(func(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig) {
+	return L2CLOptionFn(func(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig) {
 		cfg.IndexingMode = true
 	})
 }
@@ -64,7 +64,7 @@ func DefaultL2CLConfig() *L2CLConfig {
 }
 
 type L2CLOption interface {
-	Apply(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig)
+	Apply(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig)
 }
 
 // WithGlobalL2CLOption applies the L2CLOption to all L2CLNode instances in this orchestrator
@@ -74,11 +74,11 @@ func WithGlobalL2CLOption(opt L2CLOption) stack.Option[*Orchestrator] {
 	})
 }
 
-type L2CLOptionFn func(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig)
+type L2CLOptionFn func(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig)
 
 var _ L2CLOption = L2CLOptionFn(nil)
 
-func (fn L2CLOptionFn) Apply(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig) {
+func (fn L2CLOptionFn) Apply(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig) {
 	fn(p, id, cfg)
 }
 
@@ -87,7 +87,7 @@ type L2CLOptionBundle []L2CLOption
 
 var _ L2CLOption = L2CLOptionBundle(nil)
 
-func (l L2CLOptionBundle) Apply(p devtest.P, id stack.L2CLNodeID, cfg *L2CLConfig) {
+func (l L2CLOptionBundle) Apply(p devtest.Scope, id stack.L2CLNodeID, cfg *L2CLConfig) {
 	for _, opt := range l {
 		p.Require().NotNil(opt, "cannot Apply nil L2CLOption")
 		opt.Apply(p, id, cfg)

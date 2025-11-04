@@ -41,7 +41,7 @@ type KonaNode struct {
 	// Each entry is of the form "key=value".
 	env []string
 
-	p devtest.P
+	p devtest.Scope
 
 	sub *SubProcess
 
@@ -163,7 +163,7 @@ var _ L2CLNode = (*KonaNode)(nil)
 
 func WithKonaNode(l2CLID stack.L2CLNodeID, l1CLID stack.L1CLNodeID, l1ELID stack.L1ELNodeID, l2ELID stack.L2ELNodeID, opts ...L2CLOption) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		p := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), l2CLID))
+		p := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), l2CLID))
 
 		require := p.Require()
 
@@ -181,7 +181,7 @@ func WithKonaNode(l2CLID stack.L2CLNodeID, l1CLID stack.L1CLNodeID, l1ELID stack
 		l1CL, ok := orch.l1CLs.Get(l1CLID)
 		require.True(ok, "l1 CL node required")
 
-		l2EL, ok := orch.l2ELs.Get(l2ELID)
+		l2EL, ok := orch.GetL2EL(l2ELID)
 		require.True(ok, "l2 EL node required")
 
 		cfg := DefaultL2CLConfig()

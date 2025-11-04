@@ -86,8 +86,8 @@ func WithL1Nodes(l1ELID stack.L1ELNodeID, l1CLID stack.L1CLNodeID) stack.Option[
 
 func WithL1NodesInProcess(l1ELID stack.L1ELNodeID, l1CLID stack.L1CLNodeID) stack.Option[*Orchestrator] {
 	return stack.AfterDeploy(func(orch *Orchestrator) {
-		clP := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), l1CLID))
-		elP := orch.P().WithCtx(stack.ContextWithID(orch.P().Ctx(), l1ELID))
+		clP := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), l1CLID))
+		elP := orch.P().WithScope(stack.ContextWithID(orch.P().Ctx(), l1ELID))
 		require := orch.P().Require()
 
 		l1Net, ok := orch.l1Nets.Get(l1ELID.ChainID())

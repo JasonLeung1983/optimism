@@ -471,7 +471,12 @@ func (t *testingT) Tracer() trace.Tracer {
 
 // WithCtx implements devtest.T.
 func (t *testingT) WithCtx(ctx context.Context) devtest.T {
+	t.ctx = ctx
 	return t
+}
+
+func (t *testingT) WithScope(ctx context.Context) devtest.Scope {
+	return t.WithCtx(ctx)
 }
 
 // _TestOnly implements devtest.T.

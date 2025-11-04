@@ -67,7 +67,7 @@ func WithProposerPostDeploy(orch *Orchestrator, proposerID stack.L2ProposerID, l
 	l2CLID *stack.L2CLNodeID, supervisorID *stack.SupervisorID) {
 	ctx := orch.P().Ctx()
 	ctx = stack.ContextWithID(ctx, proposerID)
-	p := orch.P().WithCtx(ctx)
+	p := orch.P().WithScope(ctx)
 
 	require := p.Require()
 	require.False(orch.proposers.Has(proposerID), "proposer must not already exist")
