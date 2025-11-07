@@ -187,11 +187,7 @@ abstract contract DisputeGameFactory_TestInit is CommonTest {
         internal
         returns (address gameImpl_, AlphabetVM vm_, IPreimageOracle preimageOracle_)
     {
-        if (isDevFeatureEnabled(DevFeatures.DEPLOY_V2_DISPUTE_GAMES)) {
-            return setupFaultDisputeGameV2(_absolutePrestate);
-        } else {
-            return setupFaultDisputeGameV1(_absolutePrestate);
-        }
+        return setupFaultDisputeGameV2(_absolutePrestate);
     }
 
     /// @notice Sets up a fault game implementation
@@ -274,11 +270,7 @@ abstract contract DisputeGameFactory_TestInit is CommonTest {
         internal
         returns (address gameImpl_, AlphabetVM vm_, IPreimageOracle preimageOracle_)
     {
-        if (isDevFeatureEnabled(DevFeatures.DEPLOY_V2_DISPUTE_GAMES)) {
-            return setupPermissionedDisputeGameV2(_absolutePrestate, _proposer, _challenger);
-        } else {
-            return setupPermissionedDisputeGameV1(_absolutePrestate, _proposer, _challenger);
-        }
+        return setupPermissionedDisputeGameV2(_absolutePrestate, _proposer, _challenger);
     }
 
     function setupPermissionedDisputeGameV1(

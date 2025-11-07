@@ -74,7 +74,6 @@ contract DeployDisputeGame_Test is Test {
         _input.maxGameDepth = _maxGameDepth;
         _input.splitDepth = bound(_splitDepth, 2, _maxGameDepth - 2);
         _input.vmAddress = bigStepper;
-        _input.useV2 = Config.devFeatureDeployV2DisputeGames();
 
         // Run the deployment script.
         deployDisputeGame.run(_input);
@@ -181,7 +180,6 @@ contract DeployDisputeGame_Test is Test {
     function defaultFaultDisputeGameInput() private view returns (DeployDisputeGame.Input memory input_) {
         input_ = DeployDisputeGame.Input({
             release: "op-contracts",
-            useV2: Config.devFeatureDeployV2DisputeGames(),
             gameKind: "FaultDisputeGame",
             gameType: GameType.wrap(1),
             absolutePrestate: bytes32(uint256(1)),
@@ -201,7 +199,6 @@ contract DeployDisputeGame_Test is Test {
     function defaultPermissionedDisputeGameInput() private view returns (DeployDisputeGame.Input memory input_) {
         input_ = DeployDisputeGame.Input({
             release: "op-contracts",
-            useV2: Config.devFeatureDeployV2DisputeGames(),
             gameKind: "PermissionedDisputeGame",
             gameType: GameType.wrap(1),
             absolutePrestate: bytes32(uint256(1)),

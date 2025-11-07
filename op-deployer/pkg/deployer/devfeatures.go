@@ -13,10 +13,10 @@ var (
 	OptimismPortalInteropDevFlag = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000001")
 
 	// CannonKonaDevFlag enables Kona as the default cannon prover.
-	CannonKonaDevFlag = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000010")
+	//CannonKonaDevFlag = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000010")
 
 	// DeployV2DisputeGamesDevFlag enables deployment of V2 dispute game contracts.
-	DeployV2DisputeGamesDevFlag = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000100")
+	//DeployV2DisputeGamesDevFlag = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000100")
 )
 
 // IsDevFeatureEnabled checks if a specific development feature is enabled in a feature bitmap.

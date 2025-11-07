@@ -7,5 +7,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	presets.DoMain(m, presets.WithProofs(), presets.WithDisputeGameV2())
+	presets.DoMain(m, presets.WithProofs())
 }

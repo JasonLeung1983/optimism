@@ -9,6 +9,8 @@ import (
 	"github.com/ethereum-optimism/optimism/op-devstack/presets"
 )
 
+// TODO(inphi): Move these dgv2 tests to regular dg tests now that dgv2 is the default
+
 func TestSmoke(gt *testing.T) {
 	t := devtest.SerialT(gt)
 	sys := presets.NewMinimal(t)

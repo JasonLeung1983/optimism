@@ -148,18 +148,9 @@ contract DeployOPChain_Test is DeployOPChain_TestBase {
             Duration.unwrap(pdg.maxClockDuration()), Duration.unwrap(disputeMaxClockDuration), "PDG maxClockDuration"
         );
 
-        if (isDevFeatureEnabled(DevFeatures.DEPLOY_V2_DISPUTE_GAMES)) {
-            // For v2 contracts, some immutable args are passed in at game creation time from DGF.gameArgs
-            assertEq(address(pdg.proposer()), address(0), "PDG proposer");
-            assertEq(address(pdg.challenger()), address(0), "PDG challenger");
-            assertEq(Claim.unwrap(pdg.absolutePrestate()), bytes32(0), "PDG absolutePrestate");
-        } else {
-            assertEq(address(pdg.proposer()), proposer, "PDG proposer");
-            assertEq(address(pdg.challenger()), challenger, "PDG challenger");
-            assertEq(
-                Claim.unwrap(pdg.absolutePrestate()), Claim.unwrap(disputeAbsolutePrestate), "PDG absolutePrestate"
-            );
-        }
+        assertEq(address(pdg.proposer()), address(0), "PDG proposer");
+        assertEq(address(pdg.challenger()), address(0), "PDG challenger");
+        assertEq(Claim.unwrap(pdg.absolutePrestate()), bytes32(0), "PDG absolutePrestate");
     }
 
     function testFuzz_run_memory_succeeds(bytes32 _seed) public {
@@ -181,36 +172,21 @@ contract DeployOPChain_Test is DeployOPChain_TestBase {
 
         // Check dispute game deployments
         // Validate permissionedDisputeGame (PDG) address
-        bool isDeployV2Games = isDevFeatureEnabled(DevFeatures.DEPLOY_V2_DISPUTE_GAMES);
         IOPContractsManager.Implementations memory impls = opcm.implementations();
-        address expectedPDGAddress =
-            isDeployV2Games ? impls.permissionedDisputeGameV2Impl : address(doo.permissionedDisputeGame);
+        address expectedPDGAddress = impls.permissionedDisputeGameV2Impl;
         address actualPDGAddress = address(doo.disputeGameFactoryProxy.gameImpls(GameTypes.PERMISSIONED_CANNON));
         assertNotEq(actualPDGAddress, address(0), "PDG address should be non-zero");
         assertEq(actualPDGAddress, expectedPDGAddress, "PDG address should match expected address");
 
         // Check PDG getters
         IPermissionedDisputeGame pdg = IPermissionedDisputeGame(actualPDGAddress);
-        bytes32 expectedPrestate =
-            isDeployV2Games ? bytes32(0) : bytes32(0x038512e02c4c3f7bdaec27d00edf55b7155e0905301e1a88083e4e0a6764d54c);
+        bytes32 expectedPrestate = bytes32(0);
         assertEq(pdg.l2BlockNumber(), 0, "3000");
         assertEq(Claim.unwrap(pdg.absolutePrestate()), expectedPrestate, "3100");
         assertEq(Duration.unwrap(pdg.clockExtension()), 10800, "3200");
         assertEq(Duration.unwrap(pdg.maxClockDuration()), 302400, "3300");
         assertEq(pdg.splitDepth(), 30, "3400");
         assertEq(pdg.maxGameDepth(), 73, "3500");
-    }
-
-    function test_customDisputeGame_customEnabled_succeeds() public {
-        // For v2 games, these parameters have already been configured at OPCM deploy time
-        skipIfDevFeatureEnabled(DevFeatures.DEPLOY_V2_DISPUTE_GAMES);
-
-        deployOPChainInput.allowCustomDisputeParameters = true;
-        deployOPChainInput.disputeSplitDepth = disputeSplitDepth + 1;
-        DeployOPChain.Output memory doo = deployOPChain.run(deployOPChainInput);
-
-        IPermissionedDisputeGame pdg = getPermissionedDisputeGame(doo);
-        assertEq(pdg.splitDepth(), disputeSplitDepth + 1);
     }
 
     function getPermissionedDisputeGame(DeployOPChain.Output memory doo)
