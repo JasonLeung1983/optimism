@@ -984,80 +984,6 @@ contract OPContractsManagerUpgrader is OPContractsManagerBase {
         assertValidContractAddress(address(_config.systemConfigProxy));
     }
 
-    /// @notice Deploys and sets a new v1 dispute game implementation
-    /// @param _l2ChainId The L2 chain ID
-    /// @param _disputeGame The current dispute game implementation
-    /// @param _newDelayedWeth The new delayed WETH implementation
-    /// @param _newAnchorStateRegistryProxy The new anchor state registry proxy
-    /// @param _gameType The type of game to deploy
-    /// @param _opChainConfig The OP chain configuration
-    function deployAndSetNewGameImplV1(
-        uint256 _l2ChainId,
-        IDisputeGame _disputeGame,
-        IDelayedWETH _newDelayedWeth,
-        IAnchorStateRegistry _newAnchorStateRegistryProxy,
-        GameType _gameType,
-        OPContractsManager.OpChainConfig memory _opChainConfig
-    )
-        internal
-    {
-        OPContractsManager.Blueprints memory bps = getBlueprints();
-        OPContractsManager.Implementations memory impls = getImplementations();
-
-        // Get the constructor params for the game
-        IFaultDisputeGame.GameConstructorParams memory params =
-            getGameConstructorParams(IFaultDisputeGame(address(_disputeGame)));
-
-        // Modify the params with the new vm values.
-        params.weth = _newDelayedWeth;
-        params.anchorStateRegistry = _newAnchorStateRegistryProxy;
-        params.vm = IBigStepper(impls.mipsImpl);
-
-        // If the prestate is set in the config, use it. If not set, we'll try to use the prestate
-        // that already exists on the current dispute game.
-        if (Claim.unwrap(_opChainConfig.cannonPrestate) != bytes32(0)) {
-            params.absolutePrestate = _opChainConfig.cannonPrestate;
-        }
-
-        // As a sanity check, if the prestate is zero here, revert.
-        if (params.absolutePrestate.raw() == bytes32(0)) {
-            revert OPContractsManager.PrestateNotSet();
-        }
-
-        IDisputeGame newGame;
-        if (GameType.unwrap(_gameType) == GameType.unwrap(GameTypes.PERMISSIONED_CANNON)) {
-            address proposer = getProposerV1(IPermissionedDisputeGame(address(_disputeGame)));
-            address challenger = getChallengerV1(IPermissionedDisputeGame(address(_disputeGame)));
-            newGame = IDisputeGame(
-                Blueprint.deployFrom(
-                    bps.permissionedDisputeGame1,
-                    bps.permissionedDisputeGame2,
-                    computeSalt(
-                        _l2ChainId, reusableSaltMixer(_opChainConfig.systemConfigProxy), "PermissionedDisputeGame"
-                    ),
-                    encodePermissionedFDGConstructor(params, proposer, challenger)
-                )
-            );
-        } else {
-            newGame = IDisputeGame(
-                Blueprint.deployFrom(
-                    bps.permissionlessDisputeGame1,
-                    bps.permissionlessDisputeGame2,
-                    computeSalt(
-                        _l2ChainId, reusableSaltMixer(_opChainConfig.systemConfigProxy), "PermissionlessDisputeGame"
-                    ),
-                    encodePermissionlessFDGConstructor(params)
-                )
-            );
-        }
-
-        // Grab the DisputeGameFactory from the SystemConfig.
-        IDisputeGameFactory dgf = IDisputeGameFactory(_opChainConfig.systemConfigProxy.disputeGameFactory());
-
-        // Set the new implementation.
-        setDGFImplementation(dgf, _gameType, IDisputeGame(newGame));
-    }
-
     /// @notice Sets the latest permissioned dispute game v2 implementation
     /// @param _impls The container for the new dispute game implementations.
     /// @param _l2ChainId The L2 chain ID
@@ -1962,10 +1888,6 @@ contract OPContractsManager is ISemver {
         address proxyAdmin;
         address l1ChugSplashProxy;
         address resolvedDelegateProxy;
-        address permissionedDisputeGame1;
-        address permissionedDisputeGame2;
-        address permissionlessDisputeGame1;
-        address permissionlessDisputeGame2;
     }
 
     /// @notice The latest implementation contracts for the OP Stack.
@@ -2026,9 +1948,9 @@ contract OPContractsManager is ISemver {
 
     // -------- Constants and Variables --------
 
-    /// @custom:semver 5.6.0
+    /// @custom:semver 5.7.0
     function version() public pure virtual returns (string memory) {
-        return "5.6.0";
+        return "5.7.0";
     }
 
     OPContractsManagerGameTypeAdder public immutable opcmGameTypeAdder;

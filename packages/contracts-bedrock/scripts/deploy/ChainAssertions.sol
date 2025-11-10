@@ -426,11 +426,6 @@ library ChainAssertions {
         Blueprint.Preamble memory rdProxyPreamble =
             Blueprint.parseBlueprintPreamble(address(blueprints.resolvedDelegateProxy).code);
         require(keccak256(rdProxyPreamble.initcode) == keccak256(vm.getCode("ResolvedDelegateProxy")), "CHECK-OPCM-200");
-
-        require(address(blueprints.permissionedDisputeGame1).code.length == 0, "CHECK-OPCM-220");
-        require(address(blueprints.permissionedDisputeGame2).code.length == 0, "CHECK-OPCM-230");
-        require(address(blueprints.permissionlessDisputeGame1).code.length == 0, "CHECK-OPCM-240");
-        require(address(blueprints.permissionlessDisputeGame2).code.length == 0, "CHECK-OPCM-250");
     }
 
     function checkAnchorStateRegistryProxy(IAnchorStateRegistry _anchorStateRegistryProxy, bool _isProxy) internal {
