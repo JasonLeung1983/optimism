@@ -114,6 +114,10 @@ func TestEndToEndBootstrapApply(t *testing.T) {
 			CacheDir:                        testCacheDir,
 			Logger:                          lgr,
 			Challenger:                      common.Address{'C'},
+			FaultGameMaxGameDepth:           standard.DisputeMaxGameDepth,
+			FaultGameSplitDepth:             standard.DisputeSplitDepth,
+			FaultGameClockExtension:         standard.DisputeClockExtension,
+			FaultGameMaxClockDuration:       standard.DisputeMaxClockDuration,
 		})
 		require.NoError(t, err)
 
