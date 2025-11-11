@@ -22,7 +22,6 @@ import { StandardConstants } from "scripts/deploy/StandardConstants.sol";
 // Libraries
 import { Types } from "scripts/libraries/Types.sol";
 import { Duration } from "src/dispute/lib/LibUDT.sol";
-import { DevFeatures } from "src/libraries/DevFeatures.sol";
 import { GameType, Claim, GameTypes, Proposal, Hash } from "src/dispute/lib/Types.sol";
 
 // Interfaces

@@ -13,7 +13,6 @@ import { IPreimageOracle } from "interfaces/cannon/IPreimageOracle.sol";
 import { LibPosition } from "src/dispute/lib/LibPosition.sol";
 import { GameType } from "src/dispute/lib/Types.sol";
 import { LibString } from "@solady/utils/LibString.sol";
-import { Config } from "scripts/libraries/Config.sol";
 
 import { PreimageOracle } from "src/cannon/PreimageOracle.sol";
 import { DeployDisputeGame } from "scripts/deploy/DeployDisputeGame.s.sol";
