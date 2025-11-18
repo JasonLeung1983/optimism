@@ -87,7 +87,9 @@ func runFlashblocksTransfer(t devtest.T, sys *presets.SingleChainWithFlashblocks
 
 	// flashblocks listener
 	flashblocksClient := sys.L2RollupBoost.FlashblocksClient()
-	go flashblocksClient.ListenFor(logger, 20*time.Second, output, doneListening) //nolint:errcheck
+	go func() {
+		_ = listenForFlashblocks(logger, flashblocksClient, 20*time.Second, output, doneListening)
+	}()
 
 	var executedTransaction *txplan.PlannedTx
 	var transactionApproxConfirmationTime time.Time

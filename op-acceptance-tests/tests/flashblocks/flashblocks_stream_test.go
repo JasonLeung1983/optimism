@@ -111,38 +111,38 @@ func runFlashblocksStream(t devtest.T, sys *presets.SingleChainWithFlashblocks, 
 	builderOutput := make(chan []byte, maxExpectedFlashblocks)
 	builderDone := make(chan struct{})
 	go func() {
-		err := oprbuilderNode.FlashblocksClient().ListenFor(logger.With("stream_source", "op-rbuilder"), testDuration, builderOutput, builderDone)
-		require.NoError(t, err)
+		err := oprbuilderNode.ListenFor(logger.With("stream_source", "op-rbuilder"), testDuration, builderOutput, builderDone)
+		require.NoError(t, err, "failed to listen for op-rbuilder flashblocks stream")
 	}()
 	builderMessages := make([]string, 0)
 
-	output := make(chan []byte, maxExpectedFlashblocks)
-	doneListening := make(chan struct{})
-	streamedMessages := make([]string, 0)
+	rbOutput := make(chan []byte, maxExpectedFlashblocks)
+	rbDone := make(chan struct{})
 	go func() {
-		err := rollupBoostNode.FlashblocksClient().ListenFor(logger.With("stream_source", "rollup-boost"), testDuration, output, doneListening)
-		require.NoError(t, err)
+		err := rollupBoostNode.ListenFor(logger.With("stream_source", "rollup-boost"), testDuration, rbOutput, rbDone)
+		require.NoError(t, err, "failed to listen for rollup-boost flashblocks stream")
 	}()
+	streamedMessages := make([]string, 0)
 
 	listening := true
 	for listening {
 		select {
-		case <-doneListening:
-			doneListening = nil
+		case <-rbDone:
+			rbDone = nil
 		case <-builderDone:
 			builderDone = nil
-		case msg := <-output:
+		case msg := <-rbOutput:
 			streamedMessages = append(streamedMessages, string(msg))
 		case msg := <-builderOutput:
 			builderMessages = append(builderMessages, string(msg))
 		}
 
-		if doneListening == nil && builderDone == nil {
+		if rbDone == nil && builderDone == nil {
 			listening = false
 		}
 	}
 
-	defer close(output)
+	defer close(rbOutput)
 	defer close(builderOutput)
 
 	logger.Info("Completed WebSocket stream reading", "message_count", len(streamedMessages))

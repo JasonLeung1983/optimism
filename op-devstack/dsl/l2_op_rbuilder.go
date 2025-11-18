@@ -1,7 +1,11 @@
 package dsl
 
 import (
+	"context"
+	"strings"
 	"time"
+
+	opclient "github.com/ethereum-optimism/optimism/op-service/client"
 
 	"github.com/ethereum-optimism/optimism/op-devstack/stack"
 	"github.com/ethereum/go-ethereum/log"
@@ -20,7 +24,7 @@ func NewOPRBuilderNodeSet(inner []stack.OPRBuilderNode, control stack.ControlPla
 type OPRBuilderNode struct {
 	commonImpl
 	inner    stack.OPRBuilderNode
-	wsClient *FlashblocksWSClient
+	wsClient *opclient.WSClient
 	control  stack.ControlPlane
 }
 
@@ -28,7 +32,7 @@ func NewOPRBuilderNode(inner stack.OPRBuilderNode, control stack.ControlPlane) *
 	return &OPRBuilderNode{
 		commonImpl: commonFromT(inner.T()),
 		inner:      inner,
-		wsClient:   NewFlashblocksWSClient(inner.FlashblocksClient()),
+		wsClient:   inner.FlashblocksClient(),
 		control:    control,
 	}
 }
@@ -42,7 +46,7 @@ func (c *OPRBuilderNode) Escape() stack.OPRBuilderNode {
 }
 
 func (c *OPRBuilderNode) ListenFor(logger log.Logger, duration time.Duration, output chan<- []byte, done chan<- struct{}) error {
-	return c.wsClient.ListenFor(logger, duration, output, done)
+	return listenForWS(logger, c.wsClient, duration, output, done)
 }
 
 func (el *OPRBuilderNode) Stop() {
@@ -54,6 +58,41 @@ func (el *OPRBuilderNode) Start() {
 	el.control.OPRBuilderNodeState(el.inner.ID(), stack.Start)
 }
 
-func (el *OPRBuilderNode) FlashblocksClient() *FlashblocksWSClient {
-	return NewFlashblocksWSClient(el.inner.FlashblocksClient())
+// listenForWS reads from the given websocket client for the specified duration,
+// and forwards any received messages to the output channel.
+func listenForWS(logger log.Logger, wsClient *opclient.WSClient, duration time.Duration, output chan<- []byte, done chan<- struct{}) error {
+	defer close(done)
+
+	logger.Info("Listening on WebSocket client", "duration", duration)
+
+	timeout := time.After(duration)
+	messageCount := 0
+	for {
+		select {
+		case <-timeout:
+			logger.Info("WebSocket read timeout reached", "total_messages", messageCount)
+			return nil
+		default:
+			readCtx, cancel := context.WithTimeout(context.Background(), duration)
+			_, message, err := wsClient.Read(readCtx)
+			cancel()
+			if err != nil {
+				// Per-read timeout is expected; continue until overall duration elapses.
+				if strings.Contains(err.Error(), "deadline exceeded") || strings.Contains(err.Error(), "timeout") {
+					continue
+				}
+				logger.Error("Error reading WebSocket message", "error", err, "message_count", messageCount)
+				return err
+			}
+			messageCount++
+			logger.Debug("Received WebSocket message", "message_count", messageCount, "message_length", len(message))
+			select {
+			case output <- message:
+				logger.Debug("Message sent to output channel", "message_count", messageCount)
+			case <-timeout:
+				logger.Info("Timeout while sending message to output channel", "total_messages", messageCount)
+				return nil
+			}
+		}
+	}
 }

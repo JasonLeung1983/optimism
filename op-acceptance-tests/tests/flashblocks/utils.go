@@ -1,8 +1,13 @@
 package flashblocks
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
+	"time"
+
+	opclient "github.com/ethereum-optimism/optimism/op-service/client"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 type Flashblock struct {
@@ -50,4 +55,43 @@ func (f *Flashblock) UnmarshalJSON(data []byte) error {
 	f.Metadata.NewAccountBalances = loweredBalances
 
 	return nil
+}
+
+// listenForFlashblocks reads flashblocks from the given websocket client for the
+// specified duration. This mirrors the devstack DSL helper but lives inside the
+// test package so acceptance tests can reuse the logic.
+func listenForFlashblocks(logger log.Logger, wsClient *opclient.WSClient, duration time.Duration, output chan<- []byte, done chan<- struct{}) error {
+	defer close(done)
+
+	logger.Info("Listening on WebSocket client", "duration", duration)
+
+	timeout := time.After(duration)
+	messageCount := 0
+	for {
+		select {
+		case <-timeout:
+			logger.Info("WebSocket read timeout reached", "total_messages", messageCount)
+			return nil
+		default:
+			readCtx, cancel := context.WithTimeout(context.Background(), duration)
+			_, message, err := wsClient.Read(readCtx)
+			cancel()
+			if err != nil {
+				if strings.Contains(err.Error(), "deadline exceeded") || strings.Contains(err.Error(), "timeout") {
+					continue
+				}
+				logger.Error("Error reading WebSocket message", "error", err, "message_count", messageCount)
+				return err
+			}
+			messageCount++
+			logger.Debug("Received WebSocket message", "message_count", messageCount, "message_length", len(message))
+			select {
+			case output <- message:
+				logger.Debug("Message sent to output channel", "message_count", messageCount)
+			case <-timeout:
+				logger.Info("Timeout while sending message to output channel", "total_messages", messageCount)
+				return nil
+			}
+		}
+	}
 }
