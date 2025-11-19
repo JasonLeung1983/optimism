@@ -77,24 +77,18 @@ if [ "$HAS_ZSTD" = true ]; then
   exists_zst=$(curl -s -o /dev/null --fail -LI "https://storage.googleapis.com/oplabs-contract-artifacts/$archive_name_zst" || echo "fail")
 
   if [ "$exists_zst" != "fail" ]; then
-    echoerr "> Found .tar.zst artifacts. Downloading..."
-    curl -o "$archive_name_zst" "https://storage.googleapis.com/oplabs-contract-artifacts/$archive_name_zst"
-    echoerr "> Done."
+    download_and_extract "$archive_name_zst"
+  fi
 
-    echoerr "> Cleaning up existing artifacts..."
-    rm -rf artifacts
-    rm -rf forge-artifacts
-    rm -rf cache
-    echoerr "> Done."
+  # Try latest fallback if enabled
+  if [ "$USE_LATEST_FALLBACK" = true ]; then
+    echoerr "> Exact checksum not found, trying latest artifacts..."
+    archive_name_zst="artifacts-v1-latest.tar.zst"
+    exists_latest_zst=$(curl -s -o /dev/null --fail -LI "https://storage.googleapis.com/oplabs-contract-artifacts/$archive_name_zst" || echo "fail")
 
-    echoerr "> Extracting existing artifacts..."
-    zstd -dc "$archive_name_zst" | tar -xf -
-    echoerr "> Done."
-
-    echoerr "> Cleaning up."
-    rm "$archive_name_zst"
-    echoerr "> Done."
-    exit 0
+    if [ "$exists_latest_zst" != "fail" ]; then
+      download_and_extract "$archive_name_zst"
+    fi
   fi
 fi
 
@@ -120,26 +114,4 @@ if [ "$exists_gz" == "fail" ]; then
   fi
 fi
 
-if [ "$HAS_ZSTD" = true ]; then
-  echoerr "> Only .tar.gz artifacts available (zstd format not found)."
-else
-  echoerr "> Found .tar.gz artifacts (zstd not available)."
-fi
-
-echoerr "> Cleaning up existing artifacts..."
-rm -rf artifacts
-rm -rf forge-artifacts
-rm -rf cache
-echoerr "> Done."
-
-echoerr "> Downloading artifacts..."
-curl -o "$archive_name_gz" "https://storage.googleapis.com/oplabs-contract-artifacts/$archive_name_gz"
-echoerr "> Done."
-
-echoerr "> Extracting existing artifacts..."
-tar -xzvf "$archive_name_gz"
-echoerr "> Done."
-
-echoerr "> Cleaning up."
-rm "$archive_name_gz"
-echoerr "> Done."
+download_and_extract "$archive_name_gz"
