@@ -6,7 +6,6 @@ import { StdAssertions } from "forge-std/StdAssertions.sol";
 
 // Testing
 import { stdToml } from "forge-std/StdToml.sol";
-import { DelegateCaller } from "test/mocks/Callers.sol";
 import { FeatureFlags } from "test/setup/FeatureFlags.sol";
 
 // Scripts
