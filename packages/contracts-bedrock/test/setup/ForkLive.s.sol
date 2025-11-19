@@ -209,19 +209,16 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
             cannonKonaPrestate: Claim.wrap(bytes32(keccak256("cannonKonaPrestate")))
         });
 
-        // Turn the SuperchainPAO into a DelegateCaller so we can try to upgrade the
-        // SuperchainConfig contract.
+
+        // Execute the SuperchainConfig upgrade.
+        // nosemgrep: sol-safety-trycatch-eip150
+        // Always try to upgrade the SuperchainConfig. Not always necessary but easier to do it
+        // every time rather than adding or removing this code for each upgrade.
         ISuperchainConfig superchainConfig = ISuperchainConfig(artifacts.mustGetAddress("SuperchainConfigProxy"));
         IProxyAdmin superchainProxyAdmin = IProxyAdmin(EIP1967Helper.getAdmin(address(superchainConfig)));
         address superchainPAO = superchainProxyAdmin.owner();
-        bytes memory superchainPAOCode = address(superchainPAO).code;
-        vm.etch(superchainPAO, vm.getDeployedCode("test/mocks/Callers.sol:DelegateCaller"));
-
-        // Always try to upgrade the SuperchainConfig. Not always necessary but easier to do it
-        // every time rather than adding or removing this code for each upgrade.
-        try DelegateCaller(superchainPAO).dcForward(
-            address(_opcm), abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig))
-        ) {
+        vm.prank(superchainPAO, true);
+        try _opcm.upgradeSuperchainConfig(superchainConfig) {
             // Great, the upgrade succeeded.
         } catch (bytes memory reason) {
             // Only acceptable revert reason is the SuperchainConfig already being up to date.
@@ -232,21 +229,9 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
             );
         }
 
-        // Reset the superchainPAO to the original code.
-        vm.etch(superchainPAO, superchainPAOCode);
-
-        // Temporarily replace the upgrader with a DelegateCaller so we can test the upgrade,
-        // then reset its code to the original code.
-        bytes memory upgraderCode = address(_delegateCaller).code;
-        vm.etch(_delegateCaller, vm.getDeployedCode("test/mocks/Callers.sol:DelegateCaller"));
-
         // Upgrade the chain.
-        DelegateCaller(_delegateCaller).dcForward(
-            address(_opcm), abi.encodeCall(IOPContractsManager.upgrade, (opChains))
-        );
-
-        // Reset the upgrader to the original code.
-        vm.etch(_delegateCaller, upgraderCode);
+        vm.prank(_delegateCaller, true);
+        _opcm.upgrade(opChains);
     }
 
     /// @notice Upgrades the contracts using the OPCM.
