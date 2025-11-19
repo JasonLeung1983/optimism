@@ -208,7 +208,6 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
             cannonKonaPrestate: Claim.wrap(bytes32(keccak256("cannonKonaPrestate")))
         });
 
-
         // Execute the SuperchainConfig upgrade.
         // nosemgrep: sol-safety-trycatch-eip150
         // Always try to upgrade the SuperchainConfig. Not always necessary but easier to do it
