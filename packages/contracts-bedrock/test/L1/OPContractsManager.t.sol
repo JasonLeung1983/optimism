@@ -1057,14 +1057,17 @@ contract OPContractsManager_UpdatePrestate_Test is OPContractsManager_TestInit {
         IOPContractsManager.UpdatePrestateInput[] memory inputs = new IOPContractsManager.UpdatePrestateInput[](1);
         inputs[0] = _input;
 
+        // cache the proxy admin owner before the revert check
+        address proxyAdminOwner = chainDeployOutput1.opChainProxyAdmin.owner();
         if (_revertBytes.length > 0) {
             vm.expectRevert(_revertBytes);
         }
 
         // Trigger the updatePrestate function.
-        address proxyAdminOwner = chainDeployOutput1.opChainProxyAdmin.owner();
         vm.prank(proxyAdminOwner, true);
-        prestateUpdater.updatePrestate(inputs);
+        (bool success,) =
+            address(prestateUpdater).delegatecall(abi.encodeCall(IOPContractsManager.updatePrestate, (inputs)));
+        assertTrue(success, "updatePrestate failed");
 
         // Return early if a revert was expected. Otherwise we'll get errors below.
         if (_revertBytes.length > 0) {
