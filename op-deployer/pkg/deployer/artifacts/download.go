@@ -12,8 +12,10 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"sync"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/ethereum-optimism/optimism/op-service/httputil"
 
 	"github.com/ethereum-optimism/optimism/op-service/ioutil"
@@ -48,7 +50,14 @@ func Download(ctx context.Context, loc *Locator, progressor ioutil.Progressor, t
 			return nil, fmt.Errorf("failed to download artifacts: %w", err)
 		}
 	case "file":
-		artifactsFS = os.DirFS(u.Path)
+		// Check the path has forge-artifacts directory
+		forgeArtifactsDir := path.Join(u.Path, "forge-artifacts")
+		if _, err := os.Stat(forgeArtifactsDir); err != nil {
+			// TODO(#18346): Accept this for now but in the future we should error
+			artifactsFS = os.DirFS(u.Path)
+		} else {
+			artifactsFS = os.DirFS(forgeArtifactsDir)
+		}
 	case "embedded":
 		artifactsFS, err = ExtractEmbedded(targetDir)
 		if err != nil {
@@ -73,12 +82,20 @@ func downloadHTTP(ctx context.Context, u *url.URL, progressor ioutil.Progressor,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
-	extractor := &TarballExtractor{
-		checker: checker,
+	if strings.HasSuffix(tarballPath, ".tzst") {
+		_, err := ExtractFromFile(tmpDir, tarballPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract embedded artifacts: %w", err)
+		}
+	} else {
+		extractor := &TarballExtractor{
+			checker: checker,
+		}
+		if err := extractor.Extract(tarballPath, tmpDir); err != nil {
+			return nil, fmt.Errorf("failed to extract tarball: %w", err)
+		}
 	}
-	if err := extractor.Extract(tarballPath, tmpDir); err != nil {
-		return nil, fmt.Errorf("failed to extract tarball: %w", err)
-	}
+	// TODO(#18346): Change this to provide the parent directory of the forge-artifacts directory
 	return os.DirFS(path.Join(tmpDir, "forge-artifacts")), nil
 }
 
@@ -138,16 +155,36 @@ func (e *TarballExtractor) Extract(src string, dest string) error {
 		return fmt.Errorf("integrity check failed: %w", err)
 	}
 
-	gzr, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return fmt.Errorf("failed to create gzip reader: %w", err)
+	var tr *tar.Reader
+	if e.isZstdCompressed(data) {
+		zr, err := zstd.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return fmt.Errorf("failed to create zstd reader: %w", err)
+		}
+		defer zr.Close()
+		tr = tar.NewReader(zr)
+	} else if e.isGzipCompressed(data) {
+		gzr, err := gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gzr.Close()
+		tr = tar.NewReader(gzr)
+	} else {
+		return fmt.Errorf("unsupported compression format")
 	}
-	defer gzr.Close()
 
-	tr := tar.NewReader(gzr)
 	if err := ioutil.Untar(dest, tr); err != nil {
 		return fmt.Errorf("failed to untar: %w", err)
 	}
 
 	return nil
+}
+
+func (e *TarballExtractor) isGzipCompressed(data []byte) bool {
+	return len(data) >= 2 && data[0] == 0x1f && data[1] == 0x8b
+}
+
+func (e *TarballExtractor) isZstdCompressed(data []byte) bool {
+	return len(data) >= 4 && data[0] == 0x28 && data[1] == 0xb5 && data[2] == 0x2f && data[3] == 0xfd
 }
