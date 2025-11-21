@@ -91,10 +91,10 @@ contract OPContractsManager_Harness is OPContractsManager {
     }
 }
 
-/// @notice Helper function to setup a prank for delegatecall with proper setup for Foundry.
-/// @dev Foundry requires at least one byte of code to prank delegatecalls from an address.
+/// @notice Helper function to setup a prank for delegatecall
 /// @param _caller The address to prank as the caller.
 function prankDelegateCall(address _caller) {
+    // Calculated as address(uint160(uint256(keccak256("hevm cheat code"))))
     Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
     if (_caller.code.length == 0) {
