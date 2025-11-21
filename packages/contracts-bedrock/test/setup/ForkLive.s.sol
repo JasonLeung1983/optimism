@@ -216,12 +216,10 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
         IProxyAdmin superchainProxyAdmin = IProxyAdmin(EIP1967Helper.getAdmin(address(superchainConfig)));
         address superchainPAO = superchainProxyAdmin.owner();
         vm.prank(superchainPAO, true);
-        try _opcm.upgradeSuperchainConfig(superchainConfig) {
-            // Great, the upgrade succeeded.
-        } catch (bytes memory reason) {
-            // Only acceptable revert reason is the SuperchainConfig already being up to date.
+        (bool success, bytes memory returndata) = address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
+        if (success == false) {
             assertTrue(
-                bytes4(reason)
+                bytes4(returndata)
                     == IOPContractsManagerUpgrader.OPContractsManagerUpgrader_SuperchainConfigAlreadyUpToDate.selector,
                 "Revert reason other than SuperchainConfigAlreadyUpToDate"
             );
@@ -229,7 +227,8 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
 
         // Upgrade the chain.
         vm.prank(_delegateCaller, true);
-        _opcm.upgrade(opChains);
+        (bool upgradeSuccess,) = address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgrade, (opChains)));
+        assertTrue(upgradeSuccess, "upgrade failed");
     }
 
     /// @notice Upgrades the contracts using the OPCM.
