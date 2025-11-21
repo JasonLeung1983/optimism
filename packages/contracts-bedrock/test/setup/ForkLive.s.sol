@@ -216,10 +216,11 @@ contract ForkLive is Deployer, StdAssertions, FeatureFlags {
         IProxyAdmin superchainProxyAdmin = IProxyAdmin(EIP1967Helper.getAdmin(address(superchainConfig)));
         address superchainPAO = superchainProxyAdmin.owner();
         vm.prank(superchainPAO, true);
-        (bool success, bytes memory returndata) = address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
+        (bool success, bytes memory reason) =
+            address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         if (success == false) {
             assertTrue(
-                bytes4(returndata)
+                bytes4(reason)
                     == IOPContractsManagerUpgrader.OPContractsManagerUpgrader_SuperchainConfigAlreadyUpToDate.selector,
                 "Revert reason other than SuperchainConfigAlreadyUpToDate"
             );

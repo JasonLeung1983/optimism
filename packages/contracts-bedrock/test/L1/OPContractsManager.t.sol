@@ -210,9 +210,8 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
         address superchainPAO = IProxyAdmin(EIP1967Helper.getAdmin(address(superchainConfig))).owner();
 
         // Execute the SuperchainConfig upgrade.
-        // nosemgrep: sol-safety-trycatch-eip150)
         vm.prank(superchainPAO, true);
-        (bool success, bytes memory returndata) =
+        (bool success, bytes memory reason) =
             address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         if (success == false) {
             // Only acceptable revert reason is the SuperchainConfig already being up to date. This
@@ -220,7 +219,7 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
             // the implementations struct interface can change between OPCM versions which would
             // cause the test to break and be a pain to resolve.
             assertTrue(
-                bytes4(returndata)
+                bytes4(reason)
                     == IOPContractsManagerUpgrader.OPContractsManagerUpgrader_SuperchainConfigAlreadyUpToDate.selector,
                 "Revert reason other than SuperchainConfigAlreadyUpToDate"
             );
@@ -231,6 +230,12 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
             vm.expectRevert(_revertBytes);
         }
 
+        // Execute the chain upgrade.
+        if (_delegateCaller.code.length > 0) {
+            // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
+            vm.etch(_delegateCaller, hex"00");
+        }
+        // Execute the chain upgrade.
         vm.prank(_delegateCaller, true);
         (bool upgradeSuccess,) =
             address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgrade, (opChainConfigs)));
@@ -1057,7 +1062,7 @@ contract OPContractsManager_UpdatePrestate_Test is OPContractsManager_TestInit {
         IOPContractsManager.UpdatePrestateInput[] memory inputs = new IOPContractsManager.UpdatePrestateInput[](1);
         inputs[0] = _input;
 
-        // cache the proxy admin owner before the revert check
+        // make the call to cache the proxy admin owner before setting expectRevert
         address proxyAdminOwner = chainDeployOutput1.opChainProxyAdmin.owner();
         if (_revertBytes.length > 0) {
             vm.expectRevert(_revertBytes);
