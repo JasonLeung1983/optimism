@@ -6,11 +6,17 @@ test args='./...': build-contracts copy-contract-artifacts
     go test -v {{args}}
 
 build-contracts:
-  just ../packages/contracts-bedrock/forge-build
+  just ../packages/contracts-bedrock/build-no-tests
 
 copy-contract-artifacts:
-    rm -f ./pkg/deployer/artifacts/forge-artifacts/artifacts.tgz
-    tar -cvzf ./pkg/deployer/artifacts/forge-artifacts/artifacts.tgz -C ../packages/contracts-bedrock/forge-artifacts --exclude="*.t.sol" .
+    #!/bin/bash
+    set -euo pipefail
+
+    rm -f ./pkg/deployer/artifacts/forge-artifacts/artifacts.tzst
+    go run ./pkg/deployer/artifacts/cmd/mktar \
+        -base ../packages/contracts-bedrock \
+        -out ./pkg/deployer/artifacts/forge-artifacts/artifacts.tzst \
+        --exclude="*.t.sol"
 
 _LDFLAGSSTRING := "'" + trim(
     "-X main.GitCommit=" + GITCOMMIT + " " + \

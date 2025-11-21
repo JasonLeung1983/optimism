@@ -67,7 +67,7 @@ func TestDownloadArtifacts_MockArtifacts(t *testing.T) {
 	})
 
 	correctIntegrity := &hashIntegrityChecker{
-		hash: common.HexToHash("0x0f814df0c4293aaaadd468ac37e6c92f0b40fd21df848076835cb2c21d2a516f"),
+		hash: common.HexToHash("0x8171bd7ea902495701fecf396cdc9906273c8230205645a1293d5e27aea7ac9f"),
 	}
 
 	t.Run("ok integrity", func(t *testing.T) {
