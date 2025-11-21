@@ -188,6 +188,17 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
         vm.store(address(superchainConfig), bytes32(0), slot0);
     }
 
+    /// @notice Helper function to setup a prank for delegatecall with proper setup for Foundry.
+    /// @dev Foundry requires at least one byte of code to prank delegatecalls from an address.
+    /// @param _caller The address to prank as the caller.
+    function prankDelegateCall(address _caller) internal {
+        // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
+        if (_caller.code.length == 0) {
+            vm.etch(_caller, hex"00");
+        }
+        vm.prank(_caller, true);
+    }
+
     /// @notice Helper function that runs an OPCM upgrade, asserts that the upgrade was successful,
     ///         asserts that it fits within a certain amount of gas, and runs the StandardValidator
     ///         over the result.
@@ -210,7 +221,7 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
         address superchainPAO = IProxyAdmin(EIP1967Helper.getAdmin(address(superchainConfig))).owner();
 
         // Execute the SuperchainConfig upgrade.
-        vm.prank(superchainPAO, true);
+        prankDelegateCall(superchainPAO);
         (bool success, bytes memory reason) =
             address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         if (success == false) {
@@ -231,12 +242,7 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
         }
 
         // Execute the chain upgrade.
-        if (_delegateCaller.code.length > 0) {
-            // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
-            vm.etch(_delegateCaller, hex"00");
-        }
-        // Execute the chain upgrade.
-        vm.prank(_delegateCaller, true);
+        prankDelegateCall(_delegateCaller);
         (bool upgradeSuccess,) =
             address(_opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgrade, (opChainConfigs)));
         assertTrue(upgradeSuccess, "upgrade failed");
@@ -1068,8 +1074,9 @@ contract OPContractsManager_UpdatePrestate_Test is OPContractsManager_TestInit {
             vm.expectRevert(_revertBytes);
         }
 
+        // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
         // Trigger the updatePrestate function.
-        vm.prank(proxyAdminOwner, true);
+        prankDelegateCall(proxyAdminOwner);
         (bool success,) =
             address(prestateUpdater).delegatecall(abi.encodeCall(IOPContractsManager.updatePrestate, (inputs)));
         assertTrue(success, "updatePrestate failed");
@@ -1196,7 +1203,7 @@ contract OPContractsManager_UpdatePrestate_Test is OPContractsManager_TestInit {
 
         // Trigger the updatePrestate function.
         address proxyAdminOwner = chainDeployOutput1.opChainProxyAdmin.owner();
-        vm.prank(proxyAdminOwner, true);
+        prankDelegateCall(proxyAdminOwner);
         (bool success,) =
             address(prestateUpdater).delegatecall(abi.encodeCall(IOPContractsManager.updatePrestate, (inputs)));
         assertTrue(success, "updatePrestate failed");
@@ -1324,7 +1331,7 @@ contract OPContractsManager_UpdatePrestate_Test is OPContractsManager_TestInit {
 
         // Trigger the updatePrestate function.
         address proxyAdminOwner = chainDeployOutput1.opChainProxyAdmin.owner();
-        vm.prank(proxyAdminOwner, true);
+        prankDelegateCall(proxyAdminOwner);
         (bool success,) =
             address(prestateUpdater).delegatecall(abi.encodeCall(IOPContractsManager.updatePrestate, (inputs)));
         assertTrue(success, "updatePrestate failed");
@@ -1733,7 +1740,7 @@ contract OPContractsManager_UpgradeSuperchainConfig_Test is OPContractsManager_U
 
         vm.expectEmit(address(superchainConfig));
         emit Upgraded(impls.superchainConfigImpl);
-        vm.prank(superchainPAO, true);
+        prankDelegateCall(superchainPAO);
         (bool success,) =
             address(opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         assertTrue(success, "upgradeSuperchainConfig failed");
@@ -1759,7 +1766,7 @@ contract OPContractsManager_UpgradeSuperchainConfig_Test is OPContractsManager_U
         assertNotEq(proxyAdmin.owner(), delegateCaller);
 
         vm.expectRevert("Ownable: caller is not the owner");
-        vm.prank(delegateCaller, true);
+        prankDelegateCall(delegateCaller);
         (bool success,) =
             address(opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         assertTrue(success, "upgradeSuperchainConfig failed");
@@ -1777,9 +1784,8 @@ contract OPContractsManager_UpgradeSuperchainConfig_Test is OPContractsManager_U
         vm.mockCall(address(superchainConfig), abi.encodeCall(ISuperchainConfig.version, ()), abi.encode("99.99.99"));
 
         // Try to upgrade the SuperchainConfig contract again, should fail.
-        vm.etch(upgrader, hex"00"); // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
         vm.expectRevert(IOPContractsManagerUpgrader.OPContractsManagerUpgrader_SuperchainConfigAlreadyUpToDate.selector);
-        vm.prank(upgrader, true);
+        prankDelegateCall(upgrader);
         (bool success,) =
             address(opcm).delegatecall(abi.encodeCall(IOPContractsManager.upgradeSuperchainConfig, (superchainConfig)));
         assertTrue(success, "upgradeSuperchainConfig failed");
@@ -1854,7 +1860,7 @@ contract OPContractsManager_Migrate_Test is OPContractsManager_TestInit {
         if (_revertSelector != bytes4(0)) {
             vm.expectRevert(_revertSelector);
         }
-        vm.prank(proxyAdminOwner, true);
+        prankDelegateCall(proxyAdminOwner);
         (bool success,) = address(opcm).delegatecall(abi.encodeCall(IOPContractsManager.migrate, (_input)));
         assertTrue(success, "migrate failed");
         uint256 gasAfter = gasleft();
