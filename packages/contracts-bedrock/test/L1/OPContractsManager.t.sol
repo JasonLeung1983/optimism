@@ -3,7 +3,7 @@ pragma solidity 0.8.15;
 
 // Testing
 import { Test, stdStorage, StdStorage } from "forge-std/Test.sol";
-import { VmSafe } from "forge-std/Vm.sol";
+import { Vm, VmSafe } from "forge-std/Vm.sol";
 import { CommonTest } from "test/setup/CommonTest.sol";
 import { FeatureFlags } from "test/setup/FeatureFlags.sol";
 import { DeployOPChain_TestBase } from "test/opcm/DeployOPChain.t.sol";
@@ -89,6 +89,18 @@ contract OPContractsManager_Harness is OPContractsManager {
     function chainIdToBatchInboxAddress_exposed(uint256 l2ChainId) public view returns (address) {
         return super.chainIdToBatchInboxAddress(l2ChainId);
     }
+}
+
+/// @notice Helper function to setup a prank for delegatecall with proper setup for Foundry.
+/// @dev Foundry requires at least one byte of code to prank delegatecalls from an address.
+/// @param _caller The address to prank as the caller.
+function prankDelegateCall(address _caller) {
+    Vm vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
+    // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
+    if (_caller.code.length == 0) {
+        vm.etch(_caller, hex"00");
+    }
+    vm.prank(_caller, true);
 }
 
 /// @title OPContractsManager_Upgrade_Harness
@@ -186,17 +198,6 @@ contract OPContractsManager_Upgrade_Harness is CommonTest, DisputeGames {
         slot0 = bytes32(uint256(slot0) + 1);
         // Store the new value.
         vm.store(address(superchainConfig), bytes32(0), slot0);
-    }
-
-    /// @notice Helper function to setup a prank for delegatecall with proper setup for Foundry.
-    /// @dev Foundry requires at least one byte of code to prank delegatecalls from an address.
-    /// @param _caller The address to prank as the caller.
-    function prankDelegateCall(address _caller) internal {
-        // Foundry fails with "cannot `prank` delegate call from an EOA" if empty
-        if (_caller.code.length == 0) {
-            vm.etch(_caller, hex"00");
-        }
-        vm.prank(_caller, true);
     }
 
     /// @notice Helper function that runs an OPCM upgrade, asserts that the upgrade was successful,
